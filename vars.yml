@@ -1,0 +1,12 @@
+docker_server: 98.82.116.52
+
+domain_name: mesulav.com
+
+docker_container_port: 80
+docker_username: sulav02
+docker_repo: task3
+docker_tag: 01
+
+target_port: 80
+
+email: donotreply@gmail.com

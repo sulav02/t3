@@ -1,0 +1,25 @@
+events {
+
+}
+
+http {
+
+    upstream loadBalancer {
+
+        server {{docker_server}}:{{target_port}}
+    }
+
+    server {
+        listen 443 ssl;
+        server_name {{domain_name}} www.{{domain_name}}
+
+        #ssl certificate
+        ssl_certificate /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ domain_name }}/privkey.pem;
+
+
+        location / {
+            proxy_pass http://loadBalancer;
+        }
+    }
+}
