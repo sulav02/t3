@@ -1,7 +1,72 @@
 ---
+- name: Install Docker and Start docker service on localhost
+  hosts: localhost,docker_server 
+  become: true
+  tasks:
+    - name: Docker Installation
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Enable and start docker service
+      service: 
+        name: docker
+        state: started
+        enabled: true
+
 - name: Install Docker and Start docker service on localhost and remote server
   hosts: localhost,docker_server 
   become: true
+  tasks:
+    - name: Docker Installation
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Enable and start docker service
+      service: 
+        name: docker
+        state: started
+        enabled: true
+# ----------------------------------------
+- name: Build Docker Image
+  hosts: localhost # if we write docker_server then we dont have any files yet and to automate the process we use ansible localhost
+  become: true
+  vars_files:
+    - ./vars.yml
+
+  tasks:
+    - name: Docker Installation
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Enable and start docker service
+      service: 
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Build Image
+      command: docker build -t {{docker_username}}/{{docker_repo}}:{{docker_tag}} .
+
+    - name: Docker login 
+      shell: echo "{{ DOCKER_PAT }}" | docker login -u {{docker_username}} --password-stdin
+
+    - name: Push Docker Image
+      command: docker push {{docker_username}}/{{docker_repo}}:{{docker_tag}}
+
+
+# ----------------------------------------
+- name: Pull Image and Run Docker Container
+  hosts: docker_server
+  become: true
+  vars_files:
+    - ./vars.yml
+  
   tasks:
     - name: Docker Installation
       yum:
@@ -15,34 +80,7 @@
         state: started
         enabled: true
 
-# ----------------------------------------
-- name: Build Docker Image
-  hosts: localhost # if we write docker_server then we dont have any files yet and to automate the process we use ansible localhost
-  become: true
-  vars_files:
-    - ./vars.yml
-
-  tasks:
-    - name: Build Image
-      command: docker build -t {{docker_username}}/{{docker_repo}}:{{docker_tag}} .
-
-    - name: Docker login 
-      shell: echo "{{ DOCKER_PAT }}" | docker login -u {{docker_username}} --password-stdin
-
-    
-    - name: Push Docker Image
-      command: docker push {{docker_username}}/{{docker_repo}}:{{docker_tag}}
-
-
-# ----------------------------------------
-- name: pull image
-  hosts: docker_server
-  become: true
-  vars_files:
-    - ./vars.yml
-  
-  tasks: 
-    - name: pull image
+    - name: pull docker image from docker hub
       command: docker pull {{docker_username}}/{{docker_repo}}:{{docker_tag}}
     
     - name: Remove exising docker container if exists
