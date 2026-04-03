@@ -1,35 +1,4 @@
 ---
-- name: Install Docker and Start docker service on localhost
-  hosts: localhost,docker_server 
-  become: true
-  tasks:
-    - name: Docker Installation
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
-
-    - name: Enable and start docker service
-      service: 
-        name: docker
-        state: started
-        enabled: true
-
-- name: Install Docker and Start docker service on localhost and remote server
-  hosts: localhost,docker_server 
-  become: true
-  tasks:
-    - name: Docker Installation
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
-
-    - name: Enable and start docker service
-      service: 
-        name: docker
-        state: started
-        enabled: true
 # ----------------------------------------
 - name: Build Docker Image
   hosts: localhost # if we write docker_server then we dont have any files yet and to automate the process we use ansible localhost
@@ -45,7 +14,7 @@
         update_cache: yes
 
     - name: Enable and start docker service
-      service: 
+      service:
         name: docker
         state: started
         enabled: true
@@ -53,12 +22,11 @@
     - name: Build Image
       command: docker build -t {{docker_username}}/{{docker_repo}}:{{docker_tag}} .
 
-    - name: Docker login 
+    - name: Docker login
       shell: echo "{{ DOCKER_PAT }}" | docker login -u {{docker_username}} --password-stdin
 
     - name: Push Docker Image
       command: docker push {{docker_username}}/{{docker_repo}}:{{docker_tag}}
-
 
 # ----------------------------------------
 - name: Pull Image and Run Docker Container
@@ -66,7 +34,7 @@
   become: true
   vars_files:
     - ./vars.yml
-  
+
   tasks:
     - name: Docker Installation
       yum:
@@ -75,14 +43,14 @@
         update_cache: yes
 
     - name: Enable and start docker service
-      service: 
+      service:
         name: docker
         state: started
         enabled: true
 
     - name: pull docker image from docker hub
       command: docker pull {{docker_username}}/{{docker_repo}}:{{docker_tag}}
-    
+
     - name: Remove exising docker container if exists
       command: docker rm -f c1
 
@@ -90,7 +58,7 @@
       command: docker run -dit -p {{target_port}}:{{docker_container_port}} --name c1 {{docker_username}}/{{docker_repo}}:{{docker_tag}}
 
 # ----------------------------------------
-- name: Decrypting nginx with jinja2 configuration
+- name: Install and Run Nginx using Jinja2
   hosts: nginx_server
   become: true
   vars_files:
@@ -99,28 +67,28 @@
   tasks:
     - name: Install nginx Ubuntu
       apt:
-        name: nginx 
+        name: nginx
         state: present
 
     - name: Install required packages
       apt:
         name:
           - certbot
-          - python3-certbot-nginx 
+          - python3-certbot-nginx
         state: present
 
     - name: Installation of SSL Certificate
-      command: > 
+      command: >
         certbot certonly --nginx -d {{domain_name}} 
         --email {{email}} 
         --agree-tos
-        --non-interactive       
+        --non-interactive
 
-    # - name: Copying j2 template to nginx configuration
-    #   template:
-    #     src: nginx.conf.j2
-    #     dest: /etc/nginx/nginx.conf
-    #   notify: Reload nginx
+    - name: Copying j2 template to nginx configuration
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify: Reload nginx
 
     - name: Enable nginx service
       service:
@@ -130,6 +98,6 @@
 
   handlers:
     - name: Reload nginx
-      service: 
+      service:
         name: nginx
         state: restarted
