@@ -6,12 +6,12 @@ http {
 
     upstream loadBalancer {
 
-        server {{docker_server}}:{{target_port}}
+        server {{docker_server}}:{{target_port}};
     }
 
     server {
         listen 443 ssl;
-        server_name {{domain_name}} www.{{domain_name}}
+        server_name {{domain_name}} www.{{domain_name}};
 
         #ssl certificate
         ssl_certificate /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem;
